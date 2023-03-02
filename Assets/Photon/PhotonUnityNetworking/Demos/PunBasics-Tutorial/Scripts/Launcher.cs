@@ -8,6 +8,9 @@
 // <author>developer@exitgames.com</author>
 // --------------------------------------------------------------------------------------------------------------------
 
+using System;
+using System.Collections.Generic;
+using ExitGames.Client.Photon;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -40,6 +43,16 @@ namespace Photon.Pun.Demo.PunBasics
 		[Tooltip("The UI Loader Anime")]
 		[SerializeField]
 		private LoaderAnime loaderAnime;
+
+		[SerializeField] private Text _roomStatistics;
+
+		[SerializeField] private RoomInfoContainer _roomContainerPrefab;
+		[SerializeField] private List<RoomInfoContainer> _roomContainerList;
+		[SerializeField] private Transform _lobbyContainerParent;
+		
+		[SerializeField] private CreateRoomPanel _createRoomPanel;
+
+		[SerializeField] private InRoomPanel _inRoomPanel;
 
 		#endregion
 
@@ -74,6 +87,21 @@ namespace Photon.Pun.Demo.PunBasics
 			// this makes sure we can use PhotonNetwork.LoadLevel() on the master client and all clients in the same room sync their level automatically
 			PhotonNetwork.AutomaticallySyncScene = true;
 
+		}
+
+		private void Start()
+		{
+			_lobbyContainerParent.gameObject.SetActive(false);	
+			_createRoomPanel.gameObject.SetActive(false);
+			_inRoomPanel.gameObject.SetActive(false);
+			
+			_roomContainerList = new List<RoomInfoContainer>();
+			for (var i = 0; i < 20; i++)
+			{
+				var container = Instantiate(_roomContainerPrefab, _lobbyContainerParent);
+				_roomContainerList.Add(container);
+				container.gameObject.SetActive(false);
+			}
 		}
 
 		#endregion
@@ -154,29 +182,15 @@ namespace Photon.Pun.Demo.PunBasics
 			{
 				LogFeedback("OnConnectedToMaster: Next -> try to Join Random Room");
 				Debug.Log("PUN Basics Tutorial/Launcher: OnConnectedToMaster() was called by PUN. Now this client is connected and could join a room.\n Calling: PhotonNetwork.JoinRandomRoom(); Operation will fail if no room found");
-		
-				// #Critical: The first we try to do is to join a potential existing room. If there is, good, else, we'll be called back with OnJoinRandomFailed()
-				PhotonNetwork.JoinRandomRoom();
 			}
+			
+			_lobbyContainerParent.gameObject.SetActive(true);
+			_createRoomPanel.gameObject.SetActive(true);
+
+			PhotonNetwork.JoinLobby();
 		}
 
-		/// <summary>
-		/// Called when a JoinRandom() call failed. The parameter provides ErrorCode and message.
-		/// </summary>
-		/// <remarks>
-		/// Most likely all rooms are full or no rooms are available. <br/>
-		/// </remarks>
-		public override void OnJoinRandomFailed(short returnCode, string message)
-		{
-			LogFeedback("<Color=Red>OnJoinRandomFailed</Color>: Next -> Create a new Room");
-			Debug.Log("PUN Basics Tutorial/Launcher:OnJoinRandomFailed() was called by PUN. No random room available, so we create one.\nCalling: PhotonNetwork.CreateRoom");
-
-			// #Critical: we failed to join a random room, maybe none exists or they are all full. No worries, we create a new room.
-			PhotonNetwork.CreateRoom(null, new RoomOptions { MaxPlayers = this.maxPlayersPerRoom});
-		}
-
-
-		/// <summary>
+        /// <summary>
 		/// Called after disconnecting from the Photon server.
 		/// </summary>
 		public override void OnDisconnected(DisconnectCause cause)
@@ -191,32 +205,93 @@ namespace Photon.Pun.Demo.PunBasics
 			controlPanel.SetActive(true);
 
 		}
+        #endregion
 
-		/// <summary>
-		/// Called when entering a room (by creating or joining it). Called on all clients (including the Master Client).
-		/// </summary>
-		/// <remarks>
-		/// This method is commonly used to instantiate player characters.
-		/// If a match has to be started "actively", you can call an [PunRPC](@ref PhotonView.RPC) triggered by a user's button-press or a timer.
-		///
-		/// When this is called, you can usually already access the existing players in the room via PhotonNetwork.PlayerList.
-		/// Also, all custom properties should be already available as Room.customProperties. Check Room..PlayerCount to find out if
-		/// enough players are in the room to start playing.
-		/// </remarks>
-		public override void OnJoinedRoom()
+        #region Lobby Room Callbacks
+        public override void OnRoomListUpdate(List<RoomInfo> roomList)
+        {
+	        UpdateRoomsInLobby(roomList);
+        }
+
+        private void UpdateRoomsInLobby(List<RoomInfo> roomList)
+        {
+	        foreach (var roomContainer in _roomContainerList)
+	        {
+		        roomContainer.gameObject.SetActive(false);
+	        }
+	        
+	        for (int i = 0; i < roomList.Count; i++)
+	        {
+		        Debug.Log($"Found Room {roomList[i].Name}");
+		        if (roomList[i].RemovedFromList || !roomList[i].IsVisible || !roomList[i].IsOpen) continue;
+		        
+		        _roomContainerList[i].gameObject.SetActive(true);
+		        _roomContainerList[i].UpdateRoomInfo(roomList[i]);
+	        }
+        }
+
+        public override void OnJoinedLobby()
+        {
+	        _lobbyContainerParent.gameObject.SetActive(true);
+        }
+
+        public override void OnLeftLobby()
+        {
+	        _lobbyContainerParent.gameObject.SetActive(false);
+        }
+
+        public override void OnJoinedRoom()
+        {
+	        _lobbyContainerParent.gameObject.SetActive(false);
+	        _createRoomPanel.gameObject.SetActive(false);
+	        _inRoomPanel.gameObject.SetActive(true);
+	        UpdateRoomStatistics();
+        }
+
+        public override void OnLeftRoom()
+        {
+	        _lobbyContainerParent.gameObject.SetActive(true);
+	        _createRoomPanel.gameObject.SetActive(true);
+	        _inRoomPanel.gameObject.SetActive(false);
+	        UpdateRoomStatistics();
+        }
+
+        public override void OnCreatedRoom()
+        {
+	        _lobbyContainerParent.gameObject.SetActive(false);
+	        _createRoomPanel.gameObject.SetActive(false);
+	        UpdateRoomStatistics();
+        }
+
+        #endregion
+
+		#region In Room Callbacks
+
+		public override void OnPlayerEnteredRoom(Player newPlayer)
 		{
-			LogFeedback("<Color=Green>OnJoinedRoom</Color> with "+PhotonNetwork.CurrentRoom.PlayerCount+" Player(s)");
-			Debug.Log("PUN Basics Tutorial/Launcher: OnJoinedRoom() called by PUN. Now this client is in a room.\nFrom here on, your game would be running.");
+			UpdateRoomStatistics();	
+		}
+
+		public override void OnPlayerLeftRoom(Player otherPlayer)
+		{
+			UpdateRoomStatistics();
+		}
 		
-			// #Critical: We only load if we are the first player, else we rely on  PhotonNetwork.AutomaticallySyncScene to sync our instance scene.
-			if (PhotonNetwork.CurrentRoom.PlayerCount == 1)
+		private void UpdateRoomStatistics()
+		{
+			var currentRoom = PhotonNetwork.CurrentRoom;
+			if (currentRoom == null)
 			{
-				Debug.Log("We load the 'Room for 1' ");
+				_roomStatistics.text = "";
+				return;
+			}
+			
+			_roomStatistics.text =
+				$"Name: {currentRoom.Name} \n  {currentRoom.PlayerCount}/{currentRoom.MaxPlayers} \n";
 
-				// #Critical
-				// Load the Room Level. 
-				PhotonNetwork.LoadLevel("PunBasics-Room for 1");
-
+			foreach (var player in PhotonNetwork.CurrentRoom.Players)
+			{
+				_roomStatistics.text += $"\n #{player.Key} | {player.Value.NickName}";
 			}
 		}
 

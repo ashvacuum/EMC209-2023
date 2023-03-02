@@ -1,3 +1,4 @@
+using System;
 using Photon.Pun;
 using Photon.Realtime;
 using System.Collections;
@@ -10,7 +11,11 @@ public class MultiplayerLoader : MonoBehaviourPunCallbacks
 {
     [SerializeField] private TMP_InputField _playerName;
     [SerializeField] private Button _connectBtn;
+    [SerializeField] private Button _playBtn;
 
+    
+    
+    #region Unity Callbacks
     private void Awake()
     {
         PhotonNetwork.AutomaticallySyncScene = true;
@@ -22,6 +27,11 @@ public class MultiplayerLoader : MonoBehaviourPunCallbacks
         {
             _connectBtn.onClick.AddListener(ConnectToPhoton);
         }
+
+        if (_playBtn)
+        {
+            _playBtn.onClick.AddListener(JoinRandomRoom);
+        }
     }
 
     public override void OnDisable()
@@ -30,14 +40,39 @@ public class MultiplayerLoader : MonoBehaviourPunCallbacks
         {
             _connectBtn.onClick.RemoveListener(ConnectToPhoton);
         }
+        
+        if (_playBtn)
+        {
+            _playBtn.onClick.RemoveListener(JoinRandomRoom);
+        }
     }
 
+    private void Start()
+    {
+        _playBtn.gameObject.SetActive(false);
+        _connectBtn.gameObject.SetActive(true);
+    }
+    
+    private void Update()
+    {
+        Debug.Log(GetMessage($"Is Connected and Ready: {PhotonNetwork.IsConnectedAndReady}"));
+    }
+    #endregion
+
+    #region Photon Helpers
     private string GetMessage(string message)
     {
         return $"{nameof(MultiplayerLoader)}: {message}";
     }
 
     private void ConnectToPhoton()
+    {
+        PhotonNetwork.ConnectUsingSettings();
+        PhotonNetwork.GameVersion = "1";
+        Debug.Log(GetMessage($"Connecting To Photon, {name}"));
+    }
+
+    private void JoinRandomRoom()
     {
         var name = _playerName.text;
         if (string.IsNullOrEmpty(name))
@@ -49,22 +84,17 @@ public class MultiplayerLoader : MonoBehaviourPunCallbacks
         {
             PhotonNetwork.JoinRandomRoom();
             Debug.Log(GetMessage("Joining Random Room"));
-        } else
-        {
             PhotonNetwork.NickName = name;
-            PhotonNetwork.ConnectUsingSettings();
-            PhotonNetwork.GameVersion = "1";
-            Debug.Log(GetMessage($"Connecting To Photon, {name}"));
-        }
-
-        _playerName.text = string.Empty;
+            _playerName.text = string.Empty;
+        } 
     }
+    #endregion
+    
     #region Connection
     public override void OnConnectedToMaster()
     {
-        base.OnConnectedToMaster();
-        Debug.Log(GetMessage("Successfully Connected to Master"));
-        PhotonNetwork.JoinRandomOrCreateRoom(roomOptions: new RoomOptions { MaxPlayers = 4});
+        _connectBtn.gameObject.SetActive(false);
+        _playBtn.gameObject.SetActive(true);
     }
 
     public override void OnJoinedLobby()
