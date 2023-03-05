@@ -45,7 +45,7 @@ public class AuthenticationManager : MonoBehaviour
         PlayFabClientAPI.LoginWithCustomID(
             new LoginWithCustomIDRequest
             {
-                CustomId = Guid.NewGuid().ToString(),
+                CustomId = SystemInfo.deviceUniqueIdentifier,
                 CreateAccount = true,
                 TitleId = PlayFabSettings.TitleId
             }, (loginSuccess) =>
@@ -54,13 +54,22 @@ public class AuthenticationManager : MonoBehaviour
                 {
                     Email = userName,
                     Password = password,
-                    Username = "testUser2"
+                    Username = loginSuccess.PlayFabId
                 }, (updateSuccess) =>
                     {
                         Debug.Log("Sucessfully Registered");
                     }, (updateFail) =>
-                    {
-                        Debug.LogError($"Failed to Register: {updateFail.ErrorMessage}");
+                {
+                    var msg = "";
+                        foreach (var VARIABLE in updateFail.ErrorDetails)
+                        {
+                            msg += VARIABLE.Key + "\n";
+                            foreach (var item in VARIABLE.Value)
+                            {
+                                msg += $"#{item}";
+                            }
+                        }
+                        Debug.LogError($"Failed to Register: {updateFail.Error}\n {updateFail.ErrorMessage} \n {msg}");
                     });
 
             }, (loginFailure) =>
