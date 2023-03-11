@@ -4,7 +4,10 @@
     "references": [
         "PhotonRealtime",
         "PhotonUnityNetworking",
-        "PhotonUnityNetworking.Utilities"
+        "PhotonUnityNetworking.Utilities",
+        "PlayFab",
+        "PlayFabEditorExtensions",
+        "PlayFabSDKEditor"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

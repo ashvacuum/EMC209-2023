@@ -4,6 +4,8 @@ using UnityEngine;
 using PlayFab;
 using PlayFab.ClientModels;
 using System;
+using Photon.Pun;
+using UnityEngine.SceneManagement;
 
 public class AuthenticationManager : MonoBehaviour
 {
@@ -18,7 +20,6 @@ public class AuthenticationManager : MonoBehaviour
 
     private void OnDisable()
     {
-
         _login.LoginEvent -= OnLoginCalled;
         _registration.RegisterEvent -= OnRegisterCalled;
     }
@@ -34,6 +35,8 @@ public class AuthenticationManager : MonoBehaviour
                     
                 },(loginResult) => {
                     Debug.Log("Successfully Logged in");
+                    PhotonNetwork.NickName = userName;
+                    SceneManager.LoadScene("PunBasics-Launcher");
                 },(error) => {
                     Debug.LogError($"Failed to login: {error.ErrorMessage}");
                 }
@@ -58,6 +61,8 @@ public class AuthenticationManager : MonoBehaviour
                 }, (updateSuccess) =>
                     {
                         Debug.Log("Sucessfully Registered");
+                        PhotonNetwork.NickName = userName;
+                        SceneManager.LoadScene("PunBasics-Launcher");
                     }, (updateFail) =>
                 {
                     var msg = "";

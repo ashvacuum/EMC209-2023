@@ -15,6 +15,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 using Photon.Realtime;
+using PlayFab;
 
 namespace Photon.Pun.Demo.PunBasics
 {
@@ -45,13 +46,10 @@ namespace Photon.Pun.Demo.PunBasics
 		private LoaderAnime loaderAnime;
 
 		[SerializeField] private Text _roomStatistics;
-
 		[SerializeField] private RoomInfoContainer _roomContainerPrefab;
 		[SerializeField] private List<RoomInfoContainer> _roomContainerList;
 		[SerializeField] private Transform _lobbyContainerParent;
-		
 		[SerializeField] private CreateRoomPanel _createRoomPanel;
-
 		[SerializeField] private InRoomPanel _inRoomPanel;
 
 		#endregion
@@ -86,7 +84,6 @@ namespace Photon.Pun.Demo.PunBasics
 			// #Critical
 			// this makes sure we can use PhotonNetwork.LoadLevel() on the master client and all clients in the same room sync their level automatically
 			PhotonNetwork.AutomaticallySyncScene = true;
-
 		}
 
 		private void Start()
@@ -102,6 +99,8 @@ namespace Photon.Pun.Demo.PunBasics
 				_roomContainerList.Add(container);
 				container.gameObject.SetActive(false);
 			}
+			
+			Connect();
 		}
 
 		#endregion
@@ -116,6 +115,7 @@ namespace Photon.Pun.Demo.PunBasics
 		/// </summary>
 		public void Connect()
 		{
+			
 			// we want to make sure the log is clear everytime we connect, we might have several failed attempted if connection failed.
 			feedbackText.text = "";
 
@@ -182,6 +182,11 @@ namespace Photon.Pun.Demo.PunBasics
 			{
 				LogFeedback("OnConnectedToMaster: Next -> try to Join Random Room");
 				Debug.Log("PUN Basics Tutorial/Launcher: OnConnectedToMaster() was called by PUN. Now this client is connected and could join a room.\n Calling: PhotonNetwork.JoinRandomRoom(); Operation will fail if no room found");
+			}
+
+			if (loaderAnime != null)
+			{
+				loaderAnime.gameObject.SetActive(false);
 			}
 			
 			_lobbyContainerParent.gameObject.SetActive(true);

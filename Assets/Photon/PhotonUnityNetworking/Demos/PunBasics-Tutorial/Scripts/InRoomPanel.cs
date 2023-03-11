@@ -24,7 +24,7 @@ public class InRoomPanel : MonoBehaviour
 
     private void StartGame()
     {
-        Debug.Log("Game has been started");
+        PhotonNetwork.LoadLevel("Gameplay");
     }
 
     private void LeaveRoom()
