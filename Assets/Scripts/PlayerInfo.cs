@@ -6,7 +6,7 @@ using UnityEngine;
 public class PlayerInfo : MonoBehaviourPun, IPunObservable
 {
     [SerializeField] private float _currentHealth;
-    [SerializeField] private BOOL _equipment;
+    [SerializeField] private string _equipment;
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
