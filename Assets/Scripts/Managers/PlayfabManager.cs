@@ -8,7 +8,7 @@ using Photon.Pun;
 using UnityEngine.SceneManagement;
 using static ExperienceManager;
 
-public class AuthenticationManager : MonoBehaviour
+public class PlayfabManager : MonoBehaviour
 {
     [Header("Panels")]
     [SerializeField] private LoginPanel _login;
@@ -17,22 +17,48 @@ public class AuthenticationManager : MonoBehaviour
     [Header("Managers")]
     [SerializeField] private ExperienceManager _experienceManager;
     [SerializeField] private CurrencyManager _currencyManager;
+    [SerializeField] private InventoryManager _inventoryManager;
+    [SerializeField] private StoreManager _storeManager;
     [Space(20)]
     [Header("Login Config")]
     [SerializeField] private GetPlayerCombinedInfoRequestParams _infoRequestParams;
     
+    public static PlayfabManager Instance { get; private set; }
+    
+    public ExperienceManager ExperienceManager => _experienceManager;
+    public CurrencyManager CurrencyManager => _currencyManager;
+    public InventoryManager InventoryManager => _inventoryManager;
+    public StoreManager StoreManager => _storeManager;
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
     public string PlayFabId { get; private set; }
 
     private void OnEnable()
     {
         _login.LoginEvent += OnLoginCalled;
         _registration.RegisterEvent += OnRegisterCalled;
+
+        _storeManager.PurchaseSuccessfulEvent += _currencyManager.CheckBalance;
     }
 
     private void OnDisable()
     {
         _login.LoginEvent -= OnLoginCalled;
         _registration.RegisterEvent -= OnRegisterCalled;
+        
+        
+        _storeManager.PurchaseSuccessfulEvent -= _currencyManager.CheckBalance;
     }
 
     private void OnLoginCalled(string userName , string password )
@@ -116,6 +142,8 @@ public class AuthenticationManager : MonoBehaviour
 
     private void InitializeConfigValues(GetPlayerCombinedInfoResultPayload payload)
     {
+        _storeManager.Init();
+        
         if (payload.TitleData == null) return;
         var titleData = payload.TitleData;
 
@@ -133,6 +161,11 @@ public class AuthenticationManager : MonoBehaviour
                 _currencyManager.Init(item.Key, item.Value);
                 Debug.Log($"{item.Key}: {item.Value}");
             }
+        }
+
+        if (payload.UserInventory != null)
+        {
+            _inventoryManager.UpdateInventory(payload.UserInventory);
         }
 
         if(payload.AccountInfo != null)

@@ -9,6 +9,28 @@ public class CurrencyManager : MonoBehaviour
 {
     private int _hpAmount;
     private int _vbAmount;
+
+    public event Action CheckBalanceSuccessEvent;
+    
+    public void CheckBalance()
+    {
+        PlayFabClientAPI.GetUserInventory( new GetUserInventoryRequest(), (success) =>
+        {
+            foreach (var keyValuePair in success.VirtualCurrency)
+            {
+                Init(keyValuePair.Key, keyValuePair.Value);
+            }
+
+            CheckBalanceSuccessEvent?.Invoke();
+            
+            PlayfabManager.Instance.InventoryManager.UpdateInventory(success.Inventory);
+            
+        }, (failure) =>
+        {
+            
+        });
+    }
+    
     
     public void Init(string currencyCode, int balance) 
     { 
@@ -56,9 +78,7 @@ public class CurrencyManager : MonoBehaviour
                 _hpAmount = result.Balance;
                 Debug.Log($"HP:{_hpAmount}");
                 break;
-        }
-
-            
+        }   
     }
 
     private void OnFailedModifyCurrency(PlayFabError error)
