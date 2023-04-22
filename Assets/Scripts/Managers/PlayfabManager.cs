@@ -172,6 +172,14 @@ public class PlayfabManager : MonoBehaviour
         {
             PlayFabId = payload.AccountInfo.PlayFabId;
         }
+
+        if (payload.PlayerStatistics != null)
+        {
+            foreach (var statistic in payload.PlayerStatistics)
+            {
+                Debug.Log("Statistic: " + statistic.StatisticName + " Value: " + statistic.Value);
+            }
+        }
     }
 
     

@@ -10,12 +10,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ExitGames.Client.Photon;
 using UnityEngine;
 using UnityEngine.UI;
 
 using Photon.Realtime;
 using PlayFab;
+using PlayFab.ClientModels;
 
 namespace Photon.Pun.Demo.PunBasics
 {
@@ -193,6 +195,31 @@ namespace Photon.Pun.Demo.PunBasics
 			_createRoomPanel.gameObject.SetActive(true);
 
 			PhotonNetwork.JoinLobby();
+			
+			PlayFabClientAPI.GetPlayerStatistics( new GetPlayerStatisticsRequest()
+			{
+				StatisticNames = new List<string>()
+				{
+					"Wins",
+					"Losses"
+				}            
+			}, (getSuccess) =>
+			{
+				var properties = new ExitGames.Client.Photon.Hashtable();
+            
+				foreach (var statistic in getSuccess.Statistics)
+				{
+					if (statistic.Version == 0)
+					{
+						properties.Add(statistic.StatisticName,statistic.Value);
+					}
+				}
+
+				PhotonNetwork.LocalPlayer.SetCustomProperties(properties);
+			}, (failure =>
+			{
+            
+			}));
 		}
 
         /// <summary>
@@ -293,11 +320,30 @@ namespace Photon.Pun.Demo.PunBasics
 			
 			_roomStatistics.text =
 				$"Name: {currentRoom.Name} \n  {currentRoom.PlayerCount}/{currentRoom.MaxPlayers} \n";
+			
+			List<float> winRates = new List<float>();
 
 			foreach (var player in PhotonNetwork.CurrentRoom.Players)
 			{
-				_roomStatistics.text += $"\n #{player.Key} | {player.Value.NickName}";
+
+				var wins = (int)player.Value.CustomProperties["Wins"];
+				var loss = (int)player.Value.CustomProperties["Losses"];
+				var winRate = (float)wins / (wins + loss);
+				winRates.Add(winRate);
+				
+				_roomStatistics.text += $"\n #{player.Key} | {player.Value.NickName} | {winRate):0}%";
 			}
+
+			//get an average of the win rates via a foreach loop
+			var average = winRates.Sum();
+			average /= winRates.Count;
+			
+			var properties = new ExitGames.Client.Photon.Hashtable();
+			properties.Add("AverageWinRate",average);
+			PhotonNetwork.CurrentRoom.SetCustomProperties(properties);
+
+
+
 		}
 
 		#endregion

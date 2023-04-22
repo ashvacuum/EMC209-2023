@@ -3,6 +3,8 @@ using Photon.Pun;
 using Photon.Realtime;
 using System.Collections;
 using System.Collections.Generic;
+using PlayFab;
+using PlayFab.ClientModels;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -95,6 +97,8 @@ public class MultiplayerLoader : MonoBehaviourPunCallbacks
     {
         _connectBtn.gameObject.SetActive(false);
         _playBtn.gameObject.SetActive(true);
+        
+        
     }
 
     public override void OnJoinedLobby()
@@ -124,7 +128,8 @@ public class MultiplayerLoader : MonoBehaviourPunCallbacks
 
     public override void OnJoinedRoom()
     {
-        Debug.Log(GetMessage(nameof(OnJoinedRoom)));
+        Debug.Log(GetMessage(nameof(OnJoinedRoom)))
+        
     }
 
     public override void OnJoinRoomFailed(short returnCode, string message)
